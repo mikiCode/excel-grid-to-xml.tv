@@ -20,8 +20,15 @@ async def grid_upload(file: bytes = File(...)):
         raise HTTPException(400, detail="Invalid file type")
     # choosing columns to keep, hardcoded in schema.py
     df = df[excel_columns]
-    # export pandas dataframe to mongodb
-    df.to_json("grid.json", orient="records")
+    # export pandas dataframe to json with channel and date range in filename
+    grid_name = (
+        df["Channel Name"].iloc[0]
+        + " "
+        + str(df["Date"].iloc[0])[:10]
+        + " "
+        + str(df["Date"].iloc[-1])[:10]
+    )
+    df.to_json(f"{grid_name}.json", orient="records")
     return {"message": "File uploaded successfully"}
 
 
