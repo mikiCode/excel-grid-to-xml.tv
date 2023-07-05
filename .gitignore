@@ -13,3 +13,5 @@ pip-selfcheck.json
 __pycache__
 grid.json
 *.json
+.vscode
+```

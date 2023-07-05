@@ -1,10 +1,8 @@
 import uvicorn
-from typing import Annotated
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from pydantic import BaseModel
 import pandas as pd
-from grid.schema import excel_columns
 import datetime as dt
+from grid.schema import excel_columns
 
 
 # create app
@@ -18,14 +16,21 @@ async def grid_upload(file: bytes = File(...)):
     try:
         df = pd.read_excel(file)
     except ValueError:
-        raise HTTPException(400, detail="Invalid file type")
+        raise HTTPException(415, detail="Invalid file type")
 
     # choosing columns to keep, hardcoded in schema.py
-    df = df[excel_columns]
+    try:
+        df = df[excel_columns]
+    except KeyError:
+        raise HTTPException(400, detail="Invalid column names in excel file")
     # convert datetime columns to strings with format required by xmltv - yyyymmddhhmmss
-    df["Start Time"] = df["Start Time"].dt.strftime("%H%M%S")
+    df["Start Time"] = pd.to_datetime(
+        df["Start Time"], format="%H:%M:%S", errors="coerce"
+    ).dt.strftime("%H%M%S")
     df["Date"] = df["Date"].dt.strftime("%Y%m%d")
-    df["Duration"] = df["Duration"].dt.strftime("%H:%M:%S")
+    df["Duration"] = pd.to_datetime(
+        df["Duration"], format="%H:%M:%S", errors="coerce"
+    ).dt.strftime("%H:%M:%S")
     # concatenating columns df["Date"] and df["Start Time"] to get column with format yyyymmddhhmmss
     df["programme start"] = df["Date"] + df["Start Time"]
     # create a column for the end time of the programme, no other way to retain 24h handling without hardcoding it
@@ -42,7 +47,7 @@ async def grid_upload(file: bytes = File(...)):
         + " "
         + str(df["Date"].iloc[-1])[:10]
     )
-    df.to_json(f"{grid_name}.json", orient="records")
+    df.to_json(f"{grid_name}.json", orient="records", indent=2)
     return {"message": "File uploaded successfully"}
 
 
