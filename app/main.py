@@ -1,7 +1,6 @@
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException
 import pandas as pd
-import datetime as dt
 from grid.schema import excel_columns
 
 
